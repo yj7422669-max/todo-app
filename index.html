@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>오늘의 할 일</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #202638;
+      background: #f5f7fb;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      --muted: #858da0;
+      --line: #e9ecf2;
+      --accent: #6375e8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      padding: 64px 20px;
+      background: radial-gradient(ellipse at 50% -10%, #e8ebff 0, transparent 42%), #f5f7fb;
+    }
+    .app { width: min(100%, 560px); margin: 0 auto; }
+    .heading { margin: 0 0 26px; }
+    .eyebrow {
+      margin: 0 0 9px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: clamp(28px, 7vw, 36px); letter-spacing: -.045em; }
+    .subtitle { margin: 9px 0 0; color: var(--muted); font-size: 15px; }
+    .card {
+      overflow: hidden;
+      border: 1px solid rgba(225, 229, 239, .9);
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 18px 55px rgba(45, 57, 98, .08);
+    }
+    .form { display: flex; gap: 10px; padding: 18px; border-bottom: 1px solid var(--line); }
+    .form input {
+      min-width: 0;
+      flex: 1;
+      height: 48px;
+      padding: 0 15px;
+      border: 1px solid #e5e8ef;
+      border-radius: 11px;
+      outline: none;
+      color: inherit;
+      font: inherit;
+      transition: border-color .16s, box-shadow .16s;
+    }
+    .form input::placeholder { color: #a6adbb; }
+    .form input:focus { border-color: #9aa5f2; box-shadow: 0 0 0 3px rgba(99,117,232,.12); }
+    button { font: inherit; }
+    .add-button {
+      flex: 0 0 auto;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 11px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .16s, transform .16s;
+    }
+    .add-button:hover { background: #5264d6; }
+    .add-button:active { transform: scale(.97); }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 20px; }
+    .count { color: var(--muted); font-size: 13px; }
+    .filters { display: flex; gap: 4px; }
+    .filter {
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .filter:hover { background: #f5f6fa; }
+    .filter[aria-pressed="true"] { background: #eef0ff; color: #4e5fd0; font-weight: 700; }
+    .list { margin: 0; padding: 0 18px; list-style: none; }
+    .todo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 62px;
+      border-top: 1px solid var(--line);
+      animation: appear .18s ease-out;
+    }
+    @keyframes appear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .check {
+      display: grid;
+      width: 22px;
+      height: 22px;
+      flex: 0 0 22px;
+      place-items: center;
+      padding: 0;
+      border: 1.5px solid #d5dae5;
+      border-radius: 50%;
+      background: #fff;
+      color: #fff;
+      cursor: pointer;
+      transition: .16s;
+    }
+    .check:hover { border-color: var(--accent); }
+    .todo.done .check { border-color: var(--accent); background: var(--accent); }
+    .check svg { width: 12px; height: 12px; }
+    .todo-text { min-width: 0; flex: 1; overflow-wrap: anywhere; font-size: 15px; line-height: 1.5; }
+    .todo.done .todo-text { color: #a2a8b5; text-decoration: line-through; }
+    .delete {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      place-items: center;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: #a0a6b3;
+      cursor: pointer;
+      opacity: 0;
+      transition: .16s;
+    }
+    .todo:hover .delete, .delete:focus-visible { background: #fff0f0; color: #dc6262; opacity: 1; }
+    .delete svg { width: 17px; height: 17px; }
+    .empty { padding: 43px 20px 49px; color: var(--muted); text-align: center; }
+    .empty-icon { display: grid; width: 48px; height: 48px; place-items: center; margin: 0 auto 13px; border-radius: 15px; background: #f2f3ff; color: #7885e4; font-size: 22px; }
+    .empty p { margin: 0; font-size: 14px; }
+    .footer { min-height: 52px; padding: 15px 20px; border-top: 1px solid var(--line); color: #a0a6b3; font-size: 12px; text-align: center; }
+    .clear-button { padding: 0; border: 0; background: none; color: #858da0; font: inherit; cursor: pointer; }
+    .clear-button:hover { color: #dc6262; }
+    button:focus-visible { outline: 3px solid rgba(99,117,232,.35); outline-offset: 2px; }
+    @media (max-width: 420px) {
+      body { padding: 38px 14px; }
+      .form { padding: 14px; }
+      .toolbar { padding: 13px 15px; }
+      .list { padding: 0 14px; }
+      .filter { padding: 7px 8px; }
+      .delete { opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="heading">
+      <p class="eyebrow">MY DAILY LIST</p>
+      <h1>오늘의 할 일</h1>
+      <p class="subtitle">작은 한 걸음부터 시작해 보세요.</p>
+    </header>
+
+    <section class="card" aria-label="할 일 목록">
+      <form class="form" id="todo-form">
+        <input id="todo-input" type="text" maxlength="200" placeholder="새로운 할 일을 입력하세요" aria-label="새로운 할 일" autocomplete="off" required>
+        <button class="add-button" type="submit">추가하기</button>
+      </form>
+      <div class="toolbar">
+        <span class="count" id="count" aria-live="polite"></span>
+        <div class="filters" role="group" aria-label="할 일 필터">
+          <button class="filter" type="button" data-filter="all" aria-pressed="true">전체</button>
+          <button class="filter" type="button" data-filter="active" aria-pressed="false">진행 중</button>
+          <button class="filter" type="button" data-filter="completed" aria-pressed="false">완료</button>
+        </div>
+      </div>
+      <ul class="list" id="todo-list"></ul>
+      <div class="empty" id="empty-state" hidden>
+        <div class="empty-icon" aria-hidden="true">✓</div>
+        <p id="empty-message">아직 할 일이 없어요. 첫 번째 할 일을 추가해 보세요!</p>
+      </div>
+      <div class="footer" id="footer"></div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = 'daily-todos-v1';
+      const form = document.querySelector('#todo-form');
+      const input = document.querySelector('#todo-input');
+      const list = document.querySelector('#todo-list');
+      const count = document.querySelector('#count');
+      const empty = document.querySelector('#empty-state');
+      const emptyMessage = document.querySelector('#empty-message');
+      const footer = document.querySelector('#footer');
+      const filters = [...document.querySelectorAll('.filter')];
+      let currentFilter = 'all';
+      let todos = loadTodos();
+
+      function loadTodos() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          return Array.isArray(saved) ? saved.filter(item => item && typeof item.id === 'string' && typeof item.text === 'string' && typeof item.completed === 'boolean') : [];
+        } catch { return []; }
+      }
+
+      function saveTodos() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(todos)); }
+        catch { /* 앱은 저장 공간이 없어도 현재 탭에서 계속 사용할 수 있습니다. */ }
+      }
+
+      function render() {
+        const remaining = todos.filter(todo => !todo.completed).length;
+        count.textContent = `남은 할 일 ${remaining}개`;
+        const visibleTodos = todos.filter(todo => currentFilter === 'all' || (currentFilter === 'active' ? !todo.completed : todo.completed));
+        list.replaceChildren(...visibleTodos.map(todo => {
+          const item = document.createElement('li');
+          item.className = `todo${todo.completed ? ' done' : ''}`;
+
+          const check = document.createElement('button');
+          check.className = 'check';
+          check.type = 'button';
+          check.setAttribute('aria-label', todo.completed ? `${todo.text} 완료 취소` : `${todo.text} 완료 표시`);
+          check.setAttribute('aria-pressed', String(todo.completed));
+          if (todo.completed) check.innerHTML = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 8 3 3 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          check.addEventListener('click', () => {
+            todos = todos.map(entry => entry.id === todo.id ? { ...entry, completed: !entry.completed } : entry);
+            saveTodos(); render();
+          });
+
+          const text = document.createElement('span');
+          text.className = 'todo-text';
+          text.textContent = todo.text;
+
+          const remove = document.createElement('button');
+          remove.className = 'delete';
+          remove.type = 'button';
+          remove.setAttribute('aria-label', `${todo.text} 삭제`);
+          remove.innerHTML = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2m-6 0 .7 10h6.6L14 6M8.5 9v4m3-4v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          remove.addEventListener('click', () => {
+            todos = todos.filter(entry => entry.id !== todo.id);
+            saveTodos(); render();
+          });
+
+          item.append(check, text, remove);
+          return item;
+        }));
+
+        empty.hidden = visibleTodos.length > 0;
+        if (currentFilter === 'active' && todos.length) emptyMessage.textContent = '진행 중인 할 일이 없어요.';
+        else if (currentFilter === 'completed' && todos.length) emptyMessage.textContent = '완료한 할 일이 아직 없어요.';
+        else emptyMessage.textContent = '아직 할 일이 없어요. 첫 번째 할 일을 추가해 보세요!';
+        footer.replaceChildren();
+        if (todos.some(todo => todo.completed)) {
+          const clear = document.createElement('button');
+          clear.className = 'clear-button';
+          clear.type = 'button';
+          clear.textContent = '완료한 할 일 모두 지우기';
+          clear.addEventListener('click', () => {
+            todos = todos.filter(todo => !todo.completed);
+            saveTodos(); render();
+          });
+          footer.append(clear);
+        } else {
+          footer.textContent = '할 일을 하나씩 완료해 보세요';
+        }
+      }
+
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) { input.focus(); return; }
+        todos.unshift({ id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`, text, completed: false });
+        saveTodos(); render();
+        input.value = '';
+        input.focus();
+      });
+
+      filters.forEach(button => button.addEventListener('click', () => {
+        currentFilter = button.dataset.filter;
+        filters.forEach(filter => filter.setAttribute('aria-pressed', String(filter === button)));
+        render();
+      }));
+
+      render();
+    })();
+  </script>
+</body>
+</html>
