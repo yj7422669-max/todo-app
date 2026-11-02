@@ -5,3 +5,7 @@ dist/
 *.tsbuildinfo
 .env*
 !.env.example
+
+api/.env
+
+node_modules/

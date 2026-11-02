@@ -11,7 +11,7 @@ const designs: { id: DesignKey; number: string; name: string; mood: string; desc
   { id: "dark", number: "03", name: "다크모드", mood: "MAKE SPACE TO THINK", description: "차분한 어두운 배경으로 밤에도 편안하게 써요." },
 ];
 
-const TODO_KEY = "todo-app-items-v1";
+const API_URL = "http://localhost:4000";
 const DESIGN_KEY = "todo-app-design-v1";
 
 export default function Home() {
@@ -20,55 +20,136 @@ export default function Home() {
   const [selectedDesign, setSelectedDesign] = useState<DesignKey | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
+
+useEffect(() => {
+  async function loadTodos() {
     try {
-      const savedTodos = localStorage.getItem(TODO_KEY);
-      if (savedTodos) {
-        const parsed: unknown = JSON.parse(savedTodos);
-        if (Array.isArray(parsed)) {
-          setTodos(parsed.filter((item): item is Todo =>
-            item !== null && typeof item === "object" &&
-            typeof item.id === "string" && typeof item.text === "string" &&
-            typeof item.completed === "boolean",
-          ));
-        }
+      // PostgreSQL에 저장된 할 일 가져오기
+      const response = await fetch(`${API_URL}/api/todos`);
+
+      if (!response.ok) {
+        throw new Error("할 일 조회 실패");
       }
-      const savedDesign = localStorage.getItem(DESIGN_KEY);
-      if (savedDesign && designs.some((design) => design.id === savedDesign)) {
-        setSelectedDesign(savedDesign as DesignKey);
-      }
-    } catch {
-      // 저장된 값이 없거나 손상된 경우 빈 목록으로 시작합니다.
+
+      const data: Todo[] = await response.json();
+      setTodos(data);
+    } catch (error) {
+      console.error("할 일을 불러오지 못했습니다:", error);
     } finally {
       setIsLoaded(true);
     }
-  }, []);
+  }
 
-  useEffect(() => {
-    if (!isLoaded) return;
-    try {
-      localStorage.setItem(TODO_KEY, JSON.stringify(todos));
-      if (selectedDesign) localStorage.setItem(DESIGN_KEY, selectedDesign);
-    } catch {
-      // 저장 공간이 없어도 현재 탭에서는 앱을 계속 사용할 수 있습니다.
+  // 선택한 디자인은 기존처럼 브라우저에 저장
+  try {
+    const savedDesign = localStorage.getItem(DESIGN_KEY);
+
+    if (savedDesign && designs.some((design) => design.id === savedDesign)) {
+      setSelectedDesign(savedDesign as DesignKey);
     }
-  }, [todos, selectedDesign, isLoaded]);
+  } catch {
+    console.error("디자인 설정을 불러오지 못했습니다.");
+  }
 
-  function addTodo(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text = newTodo.trim();
-    if (!text) return;
-    setTodos((current) => [{ id: crypto.randomUUID(), text, completed: false }, ...current]);
+  loadTodos();
+}, []);
+
+
+useEffect(() => {
+  if (!isLoaded || !selectedDesign) return;
+
+  try {
+    localStorage.setItem(DESIGN_KEY, selectedDesign);
+  } catch {
+    console.error("디자인 설정 저장 실패");
+  }
+}, [selectedDesign, isLoaded]);
+
+
+async function addTodo(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
+
+  const text = newTodo.trim();
+  if (!text) return;
+
+  try {
+    const response = await fetch(`${API_URL}/api/todos`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+      throw new Error("할 일 추가 실패");
+    }
+
+    const savedTodo: Todo = await response.json();
+
+    setTodos((current) => [savedTodo, ...current]);
     setNewTodo("");
+  } catch (error) {
+    console.error("할 일 추가 오류:", error);
+    alert("할 일을 추가하지 못했습니다.");
   }
+}
 
-  function toggleTodo(id: string) {
-    setTodos((current) => current.map((todo) => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
-  }
 
-  function deleteTodo(id: string) {
-    setTodos((current) => current.filter((todo) => todo.id !== id));
+ 
+async function toggleTodo(id: string) {
+  const todo = todos.find((item) => item.id === id);
+  if (!todo) return;
+
+  try {
+    const response = await fetch(`${API_URL}/api/todos/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        completed: !todo.completed,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("완료 상태 변경 실패");
+    }
+
+    const updatedTodo: Todo = await response.json();
+
+    setTodos((current) =>
+      current.map((item) =>
+        item.id === id ? updatedTodo : item
+      )
+    );
+  } catch (error) {
+    console.error("완료 상태 변경 오류:", error);
+    alert("완료 상태를 변경하지 못했습니다.");
   }
+}
+
+
+
+async function deleteTodo(id: string) {
+  try {
+    const response = await fetch(`${API_URL}/api/todos/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("할 일 삭제 실패");
+    }
+
+    setTodos((current) =>
+      current.filter((todo) => todo.id !== id)
+    );
+  } catch (error) {
+    console.error("할 일 삭제 오류:", error);
+    alert("할 일을 삭제하지 못했습니다.");
+  }
+}
+
 
   const remaining = todos.filter((todo) => !todo.completed).length;
 
