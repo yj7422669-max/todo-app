@@ -11,7 +11,7 @@ const designs: { id: DesignKey; number: string; name: string; mood: string; desc
   { id: "dark", number: "03", name: "다크모드", mood: "MAKE SPACE TO THINK", description: "차분한 어두운 배경으로 밤에도 편안하게 써요." },
 ];
 
-const API_URL = "http://localhost:4000";
+const API_URL = "";
 const DESIGN_KEY = "todo-app-design-v1";
 
 export default function Home() {

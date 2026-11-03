@@ -1,0 +1,15 @@
+**/node_modules
+**/.next
+**/out
+**/dist
+**/.env*
+**/*.tsbuildinfo
+**/*.log
+.git
+.agents
+.codex
+.aws
+api
+README.md
+hello.html
+index.html
